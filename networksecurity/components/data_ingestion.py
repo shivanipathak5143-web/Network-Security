@@ -7,6 +7,7 @@ import os
 import sys
 import pymongo
 from typing import List
+import numpy as np
 from sklearn.model_selection import train_test_split
 import pandas as pd
 from dotenv import load_dotenv
@@ -37,7 +38,7 @@ class DataIngestion:
     def export_data_into_feature_store(self,dataframe:pd.DataFrame):
         try:
             feature_store_file_path=self.data_ingestion_config.feature_store_file_path
-            dir_path=od.path.dirname(feature_store_file_path)
+            dir_path=os.path.dirname(feature_store_file_path)
             os.makedirs(dir_path,exist_ok=True)
             dataframe.to_csv(feature_store_file_path,index=True,header=True)
             return dataframe
