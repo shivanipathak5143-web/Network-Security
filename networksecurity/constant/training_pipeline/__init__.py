@@ -13,6 +13,7 @@ FILE_NAME:str='phising.csv'
 TRAIN_FILE_NAME:str='train.csv'
 TEST_FILE_NAME:str='test.csv'
 
+SCHEMA_FILE_PATH=os.path.join('data_schema','schema.yaml')
 
 
 '''
@@ -34,3 +35,4 @@ DATA_VALIDATION_VALID_DIR:str='validated'
 DATA_VALIDATION_INVALID_DIR:str='invalid'
 DATA_VALIDATION_DRIFT_REPORT_DIR:str='drift_report'
 DATA_VALIDATION_DRIFT_REPORT_FILE_NAME:str='report.yaml'
+
