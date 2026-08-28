@@ -6,6 +6,7 @@ from networksecurity.constant.training_pipeline import SCHEMA_FILE_PATH
 from scipy.stats import ks_2samp
 import pandas as pd
 import os,sys
+from networksecurity.utils.main_utils.utils import read_yaml_file
 
 class DataValidation:
     def __init__(self, data_ingestion_artifact:DataValidationArtifact,
