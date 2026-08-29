@@ -40,7 +40,7 @@ class DataIngestion:
             feature_store_file_path=self.data_ingestion_config.feature_store_file_path
             dir_path=os.path.dirname(feature_store_file_path)
             os.makedirs(dir_path,exist_ok=True)
-            dataframe.to_csv(feature_store_file_path,index=True,header=True)
+            dataframe.to_csv(feature_store_file_path,index=False,header=True)
             return dataframe
         except Exception as e:
             raise NetworkSecurityException(e,sys)
@@ -56,10 +56,10 @@ class DataIngestion:
             os.makedirs(dir_path,exist_ok=True)
             logging.info('Exporting train and test file path')
             train_set.to_csv(
-                self.data_ingestion_config.training_file_path,index=True,header=True
+                self.data_ingestion_config.training_file_path,index=False,header=True
             )
             test_set.to_csv(
-                self.data_ingestion_config.training_file_path,index=True,header=True
+                self.data_ingestion_config.testing_file_path,index=False,header=True
             )
             logging.info('Exported train and test file path')
 
