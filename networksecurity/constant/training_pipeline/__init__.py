@@ -47,4 +47,5 @@ DATA_TRANSFORMATION_IMPUTER_PARAMS:dict={
     'n_neighbors':3,
     'weights':'uniform',
 }
+PREPROCESSING_OBJECT_FILE_NAME:str='preprocessing.pkl'
 
