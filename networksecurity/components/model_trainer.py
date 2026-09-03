@@ -10,6 +10,18 @@ from networksecurity.utils.ml_utils.metric.classification_metric import get_clas
 from networksecurity.utils.ml_utils.model.estimator import NetworkModel
 from networksecurity.utils.ml_utils.model.estimator import NetworkModel
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import r2_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    GradientBoostingClassifier,
+    RandomForestClassifier,
+)
+
+
+
 class ModelTrainer:
     def __init__(self,model_train_config:ModelTrainerConfig,data_transformation_artifact:DataTransformationArtifact):
         try:
@@ -18,9 +30,36 @@ class ModelTrainer:
         except Exception as e:
             raise NetworkSecurityException(e,sys)
 
-    def train_model(self,x_train,y_train):
+    def train_model(self,x_train,y_train,x_test,y_test):
         try:
-            pass
+            models={
+                'Random Forest':RandomForestClassifier(verbose=1),
+                'Decision Tree':DecisionTreeClassifier(),
+                'Gradient Boosting':GradientBoostingClassifier(verbose=1),
+                'Logistic Regression':LogisticRegression(verbose=1),
+                'AdaBoost':AdaBoostClassifier(),
+            }
+            params={
+                'Decision Tree':{
+                    'criterion':['gini','entropy','log_loss'],
+                },
+                'Random Forest':{
+                    'n_estimators':[8,16,32,64,128,256]
+                },
+                'Gradient Boosting':{
+                    'learning_rate':[.1,.01,.05,.001],
+                    'subsample':[0.6,0.7,0.75,0.8,0.85,0.9],
+                    'n_estimators':[8,16,32,64,128,256]
+                },
+                'Logistic Regression':{},
+                'AdaBoost':{
+                    'learning_rate':[.1,.01,0.5,.001],
+                    'n_estimators':[8,16,32,64,128,256]
+                }
+            }
+
+
+
         except Exception as e:
             raise NetworkSecurityException(e,sys)
     
