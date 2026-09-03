@@ -5,7 +5,7 @@ from networksecurity.logging.logger import logging
 from networksecurity.entity.artifact_entity import DataTransformationArtifact, ModelTrainerArtifact
 from networksecurity.entity.config_entity import ModelTrainerConfig
 from networksecurity.utils.main_utils.utils import save_object, load_object
-from networksecurity.utils.main_utils.utils import load_numpy_array_data
+from networksecurity.utils.main_utils.utils import load_numpy_array_data,evaluate_models
 from networksecurity.utils.ml_utils.metric.classification_metric import get_classification_score
 from networksecurity.utils.ml_utils.model.estimator import NetworkModel
 from networksecurity.utils.ml_utils.model.estimator import NetworkModel
@@ -57,6 +57,7 @@ class ModelTrainer:
                     'n_estimators':[8,16,32,64,128,256]
                 }
             }
+            model_report:dict=evaluate_models(x_train=x_train,y_train=y_train,x_test=x_test,y_test=y_test,models=models,param=params)
 
 
 
