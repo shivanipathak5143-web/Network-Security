@@ -10,4 +10,8 @@ scipy
 dill
 pyaml
 mlflow
+dagshub
+dotenv
+fastapi
+uvicorn
 ##-e .
