@@ -9,4 +9,5 @@ numpy
 scipy
 dill
 pyaml
+mlflow
 ##-e .
