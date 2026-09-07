@@ -3,6 +3,12 @@ venv
 
 Artifacts/
 logs/
+mlruns/
 
-Artifacts/
-logs/
+__pycache__/
+*.pyc
+
+node_modules/
+dist/
+
+prediction_output/
