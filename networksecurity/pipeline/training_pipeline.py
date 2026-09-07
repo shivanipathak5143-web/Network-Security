@@ -22,7 +22,7 @@ from networksecurity.entity.artifact_entity import (
     ModelTrainerArtifact
 )
 import sys
-
+from networksecurity.constant.training_pipeline import TRAINING_BUCKET_NAME
 class TrainigPipeline:
     def __init__(self):
         self.training_pipeline_config = TrainingPipelineConfig()
