@@ -14,4 +14,5 @@ dagshub
 dotenv
 fastapi
 uvicorn
+python-multipart
 ##-e .
