@@ -89,6 +89,7 @@ async def predict_route(file: UploadFile = File(...)):
                 'rows': records,
             }
         )
+    
 
     except Exception as e:
         raise NetworkSecurityException(e, sys)
