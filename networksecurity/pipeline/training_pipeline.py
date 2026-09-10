@@ -73,6 +73,21 @@ class TrainigPipeline:
         except Exception as e:
             raise NetworkSecurityException(e, sys)
 
+    def export_model_to_final_dir(self, model_trainer_artifact, data_transformation_artifact):
+        try:
+            import shutil
+            os.makedirs(self.training_pipeline_config.model_dir, exist_ok=True)
+            shutil.copy(
+                model_trainer_artifact.trained_model_file_path,
+                os.path.join(self.training_pipeline_config.model_dir, "model.pkl")
+            )
+            shutil.copy(
+                data_transformation_artifact.transformed_object_file_path,
+                os.path.join(self.training_pipeline_config.model_dir, "preprocessor.pkl")
+            )
+        except Exception as e:
+            raise NetworkSecurityException(e, sys)
+
     def sync_artifact_dir_to_s3(self):
         try:
             aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/artifact/{self.training_pipeline_config.timestamp}"
@@ -95,6 +110,7 @@ class TrainigPipeline:
             data_validation_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
             data_transformation_artifact = self.start_data_transformation(data_validation_artifact=data_validation_artifact)
             model_trainer_artifact = self.start_model_trainer(data_transformation_artifact=data_transformation_artifact)
+            self.export_model_to_final_dir(model_trainer_artifact, data_transformation_artifact)
             self.sync_artifact_dir_to_s3()
             self.sync_saved_model_dir_to_s3()
             return model_trainer_artifact

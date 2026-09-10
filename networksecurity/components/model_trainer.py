@@ -168,7 +168,7 @@ class ModelTrainer:
                 self.model_trainer_config.trained_model_file_path,
                 obj=network_model
             )
-            save_object('final_models/model.pkl',best_model)
+            save_object('final_model/model.pkl',best_model)
 
             # Create artifact
             model_trainer_artifact = ModelTrainerArtifact(

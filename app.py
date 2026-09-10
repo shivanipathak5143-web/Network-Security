@@ -69,8 +69,8 @@ async def predict_route(file: UploadFile = File(...)):
     try:
         df = pd.read_csv(file.file)
 
-        preprocessor = load_object('final_models/preprocessor.pkl')
-        final_model = load_object('final_models/model.pkl')
+        preprocessor = load_object('final_model/preprocessor.pkl')
+        final_model = load_object('final_model/model.pkl')
         network_model = NetworkModel(preprocessor=preprocessor, model=final_model)
 
         y_pred = network_model.predict(df)
