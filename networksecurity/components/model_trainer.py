@@ -19,6 +19,9 @@ from networksecurity.utils.main_utils.utils import (
 )
 import mlflow
 import dagshub
+os.environ['MLFLOW_TRACKING_USERNAME'] = 'shivanipathak5143'
+os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('DAGSHUB_TOKEN')
+
 dagshub.init(repo_owner='shivanipathak5143', repo_name='Network-Security', mlflow=True)
 
 
