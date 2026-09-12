@@ -87,6 +87,11 @@ jobs:
         run: |
           docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
+      - name: Clean previous images and container
+        run: |
+          docker rm -f mlest || true
+          docker system prune -f
+
       - name: Run Docker Image to server users
         run: |
            docker run -d -p 8080:8080 --ipc="host" --name=mlest \
@@ -95,8 +100,3 @@ jobs:
             -e 'AWS_REGION=${{ secrets.AWS_REGION }}' \
             -e 'DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }}' \
             ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-
-
-      - name: Clean previous images and container
-        run: |
-          docker system prune -f
