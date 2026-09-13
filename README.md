@@ -133,8 +133,3 @@ docker run -p 8000:8000 phishwatch
 
 ---
 
-## 👩‍💻 Author
-
-**Shivani Pathak**
-B.Tech Computer Science / Computer Engineering Student
-Interested in AI, ML, MLOps, Cybersecurity, and Full-Stack Development
