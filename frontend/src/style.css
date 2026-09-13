@@ -1,0 +1,324 @@
+:root {
+  --ink: #12181a;
+  --panel: #1a2124;
+  --rule: #2a3336;
+  --text: #e9edea;
+  --text-dim: #8b9a94;
+  --accent: #d78a3d;
+  --accent-ink: #1c1204;
+  --bad: #c1543c;
+  --good: #4f9e74;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+}
+
+body {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 64px 24px 96px;
+}
+
+/* ---- masthead ---- */
+
+.masthead {
+  margin-bottom: 48px;
+}
+
+.wordmark-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordmark {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 38px;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+
+.status-active {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(215, 138, 61, 0.18);
+}
+
+.standfirst {
+  max-width: 54ch;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 14px 0 0;
+}
+
+/* ---- sections ---- */
+
+.rule {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 40px 0;
+}
+
+.block-head {
+  margin-bottom: 8px;
+}
+
+.block h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 21px;
+  margin: 0;
+}
+
+.block-copy {
+  color: var(--text-dim);
+  font-size: 14.5px;
+  line-height: 1.6;
+  max-width: 50ch;
+  margin: 0 0 20px;
+}
+
+/* ---- buttons ---- */
+
+.btn {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 11px 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--rule);
+}
+
+.btn-outline:hover {
+  border-color: var(--text-dim);
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.file-name {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.error-text {
+  color: var(--bad);
+  font-size: 13.5px;
+  margin: 14px 0 0;
+}
+
+/* ---- training console ---- */
+
+.console {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.console-line {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* ---- manifest (collapsible reference table) ---- */
+
+.manifest {
+  margin-top: 24px;
+}
+
+.manifest summary {
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text-dim);
+  list-style: none;
+  user-select: none;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--rule);
+  display: inline-block;
+}
+
+.manifest summary::-webkit-details-marker {
+  display: none;
+}
+
+.manifest summary:hover {
+  color: var(--text);
+}
+
+.manifest-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 13.5px;
+}
+
+.manifest-table tr {
+  border-bottom: 1px solid var(--rule);
+}
+
+.manifest-table tr:last-child {
+  border-bottom: none;
+}
+
+.manifest-table td {
+  padding: 8px 0;
+}
+
+.manifest-label {
+  color: var(--text);
+}
+
+.manifest-key {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ---- verdict ---- */
+
+.tally {
+  display: flex;
+  gap: 0;
+  margin-bottom: 26px;
+}
+
+.tally-item {
+  padding-right: 26px;
+  margin-right: 26px;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+}
+
+.tally-item:last-child {
+  border-right: none;
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.tally-num {
+  font-family: "Fraunces", serif;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.tally-bad .tally-num {
+  color: var(--bad);
+}
+
+.tally-good .tally-num {
+  color: var(--good);
+}
+
+.tally-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+}
+
+.table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+.table-wrap th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+  color: var(--text-dim);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.table-wrap td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.table-wrap tr:last-child td {
+  border-bottom: none;
+}
+
+.cell-bad {
+  color: var(--bad);
+  font-weight: 500;
+}
+
+.cell-good {
+  color: var(--good);
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .tally {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .tally-item {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+  }
+}
