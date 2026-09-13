@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 
 const API_BASE_URL = "/api";
 
@@ -51,11 +51,44 @@ function timestamp() {
 
 function parseCsvHeader(text) {
   const firstLine = text.split(/\r?\n/)[0] || "";
-  return firstLine.split(",").map((col) => col.trim());
+  return firstLine.split(",").map((col) => col.trim().replace(/^"|"$/g, ""));
+}
+
+function predictionIsPhishing(value) {
+  const normalized = String(value).trim().toLowerCase();
+  return (
+    normalized === "phishing" ||
+    normalized === "1" ||
+    normalized === "true" ||
+    normalized === "yes"
+  );
+}
+
+function escapeCsv(value) {
+  const text = String(value ?? "");
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function downloadResults(rows) {
+  if (!rows?.length) return;
+
+  const columns = Object.keys(rows[0]);
+  const csv = [
+    columns.map(escapeCsv).join(","),
+    ...rows.map((row) => columns.map((col) => escapeCsv(row[col])).join(",")),
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "phishing_prediction_results.csv";
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function App() {
-  const [trainStatus, setTrainStatus] = useState("idle"); // idle | running | done | error
+  const [trainStatus, setTrainStatus] = useState("idle");
   const [trainLog, setTrainLog] = useState([]);
 
   const [file, setFile] = useState(null);
@@ -70,14 +103,18 @@ export default function App() {
   const runTraining = async () => {
     setTrainStatus("running");
     appendLog("pipeline started — ingestion, validation, transformation, model selection");
+
     try {
       const res = await fetch(`${API_BASE_URL}/train`, { method: "GET" });
       if (!res.ok) throw new Error(await res.text());
+
       setTrainStatus("done");
       appendLog("training complete — best model saved to final_model/");
     } catch (err) {
       setTrainStatus("error");
-      appendLog(`failed — ${err.message || "training can take several minutes; check the server if this persists"}`);
+      appendLog(
+        `failed — ${err.message || "training failed; check the FastAPI server"}`
+      );
     }
   };
 
@@ -94,14 +131,17 @@ export default function App() {
       const text = await file.text();
       const header = parseCsvHeader(text);
       const missing = EXPECTED_COLUMNS.filter((col) => !header.includes(col));
+
       if (missing.length > 0) {
         setPredictError(
-          `CSV is missing ${missing.length} required column${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}`
+          `CSV is missing ${missing.length} required column${
+            missing.length > 1 ? "s" : ""
+          }: ${missing.join(", ")}`
         );
         return;
       }
     } catch {
-      setPredictError("Could not read that file — make sure it's a valid CSV.");
+      setPredictError("Could not read that file — make sure it is a valid CSV.");
       return;
     }
 
@@ -111,173 +151,332 @@ export default function App() {
     body.append("file", file);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/predict`, { method: "POST", body });
-      if (!res.ok) throw new Error(await res.text());
+      const res = await fetch(`${API_BASE_URL}/predict`, {
+        method: "POST",
+        body,
+      });
+
+      if (!res.ok) {
+        let detail = await res.text();
+        try {
+          const parsed = JSON.parse(detail);
+          detail = parsed.detail || parsed.message || detail;
+        } catch {}
+        throw new Error(detail || "Prediction failed");
+      }
+
       const data = await res.json();
       setPredictData(data);
       setPredictStatus("done");
     } catch (err) {
       setPredictStatus("error");
-      setPredictError(err.message || "Prediction failed — check the server logs.");
+      setPredictError(
+        err.message || "Prediction failed — check the FastAPI server."
+      );
     }
   };
 
   const chosenFileName = file ? file.name : "No file chosen";
 
+  const stats = useMemo(() => {
+    const rows = predictData?.rows || [];
+    const phishing =
+      typeof predictData?.phishing_count === "number"
+        ? predictData.phishing_count
+        : rows.filter((r) => predictionIsPhishing(r.predicted_column)).length;
+    const legitimate =
+      typeof predictData?.legitimate_count === "number"
+        ? predictData.legitimate_count
+        : rows.length - phishing;
+
+    return {
+      total:
+        typeof predictData?.row_count === "number"
+          ? predictData.row_count
+          : rows.length,
+      phishing,
+      legitimate,
+    };
+  }, [predictData]);
+
+  const phishingPercent = stats.total
+    ? Math.round((stats.phishing / stats.total) * 100)
+    : 0;
+
   return (
     <div className="page">
       <header className="masthead">
-        <div className="wordmark-row">
-          <h1 className="wordmark">Phishwatch</h1>
-          <span className={`status-dot status-${trainStatus === "running" ? "active" : "idle"}`} />
+        <div className="topbar">
+          <div>
+            <div className="wordmark-row">
+              <div className="logo-mark">P</div>
+              <h1 className="wordmark">Phishwatch</h1>
+              <span
+                className={`status-dot status-${trainStatus === "running" ? "active" : "idle"}`}
+              />
+            </div>
+            <p className="standfirst">
+              Machine-learning phishing detection using 30 structural website
+              signals.
+            </p>
+          </div>
+
+          <div className="model-pill">
+            <span className="model-pill-dot" />
+            ML detector
+          </div>
         </div>
-        <p className="standfirst">
-          Reads 30 structural signals off a site — IP-based URLs, SSL state, domain age,
-          iframe use — and calls it phishing or legitimate.
-        </p>
       </header>
 
-      <section className="block">
-        <div className="block-head">
-          <h2>Retrain the model</h2>
-        </div>
-        <p className="block-copy">
-          Re-runs ingestion, validation, transformation, and model selection end to end.
-          This can take several minutes.
-        </p>
-        <button
-          className="btn btn-primary"
-          onClick={runTraining}
-          disabled={trainStatus === "running"}
-        >
-          {trainStatus === "running" ? "Training in progress…" : "Run training"}
-        </button>
+      <main>
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">PHISHING WEBSITE CLASSIFIER</p>
+            <h2>
+              Turn website signals
+              <br />
+              into a security verdict.
+            </h2>
+            <p>
+              Retrain your model on the existing dataset, then upload new
+              website feature data to classify each row as phishing or
+              legitimate.
+            </p>
+          </div>
 
-        {trainLog.length > 0 && (
-          <div className="console">
-            {trainLog.map((line, i) => (
-              <div key={i} className="console-line">
-                {line}
+          <div className="signal-card">
+            <div className="signal-icon">⌁</div>
+            <div className="signal-number">30</div>
+            <div className="signal-title">structural signals</div>
+            <div className="signal-copy">
+              URL, SSL, domain, redirect, iframe and other website indicators.
+            </div>
+          </div>
+        </section>
+
+        <section className="workflow-grid">
+          <article className="action-card">
+            <div className="card-top">
+              <span className="step">01</span>
+              <span className="card-kicker">MODEL TRAINING</span>
+            </div>
+            <h3>Retrain the model</h3>
+            <p>
+              Runs your existing ingestion, validation, transformation, model
+              comparison and model-saving pipeline end to end.
+            </p>
+
+            <button
+              className="btn btn-primary"
+              onClick={runTraining}
+              disabled={trainStatus === "running"}
+            >
+              {trainStatus === "running"
+                ? "Training in progress…"
+                : "Run training"}
+            </button>
+
+            {trainLog.length > 0 && (
+              <div className="console">
+                {trainLog.map((line, i) => (
+                  <div key={i} className="console-line">
+                    <span>›</span> {line}
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="action-card">
+            <div className="card-top">
+              <span className="step">02</span>
+              <span className="card-kicker">NEW DATA</span>
+            </div>
+            <h3>Check websites</h3>
+            <p>
+              Upload a CSV containing the same 30 feature columns used during
+              training, one website record per row.
+            </p>
+
+            <div className="file-row">
+              <button
+                className="btn btn-outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Choose CSV
+              </button>
+              <span className="file-name">{chosenFileName}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                hidden
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setPredictData(null);
+                  setPredictError(null);
+                  setPredictStatus("idle");
+                }}
+              />
+            </div>
+
+            <button
+              className="btn btn-primary"
+              onClick={runPrediction}
+              disabled={predictStatus === "running"}
+            >
+              {predictStatus === "running" ? "Checking…" : "Run prediction"}
+            </button>
+
+            {predictError && <p className="error-text">{predictError}</p>}
+          </article>
+        </section>
+
+        <section className="info-strip">
+          <div>
+            <strong>How it works</strong>
+            <span>CSV → validation → preprocessing → saved ML model → verdict</span>
+          </div>
+          <div>
+            <strong>Input</strong>
+            <span>30 pre-extracted website features</span>
+          </div>
+          <div>
+            <strong>Output</strong>
+            <span>Phishing or legitimate</span>
+          </div>
+        </section>
+
+        <details className="manifest">
+          <summary>
+            <span>View the 30 required feature columns</span>
+            <span className="summary-arrow">+</span>
+          </summary>
+          <div className="manifest-grid">
+            {EXPECTED_COLUMNS.map((col, index) => (
+              <div className="manifest-item" key={col}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <strong>{COLUMN_LABELS[col]}</strong>
+                  <small>{col}</small>
+                </div>
               </div>
             ))}
           </div>
-        )}
-      </section>
-
-      <hr className="rule" />
-
-      <section className="block">
-        <div className="block-head">
-          <h2>Check a site</h2>
-        </div>
-        <p className="block-copy">
-          Upload a CSV holding the 30 feature columns the model was trained on, one row per site.
-        </p>
-
-        <div className="file-row">
-          <button className="btn btn-outline" onClick={() => fileInputRef.current.click()}>
-            Choose CSV
-          </button>
-          <span className="file-name">{chosenFileName}</span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            hidden
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              setPredictData(null);
-              setPredictError(null);
-            }}
-          />
-        </div>
-
-        <button
-          className="btn btn-primary"
-          onClick={runPrediction}
-          disabled={predictStatus === "running"}
-        >
-          {predictStatus === "running" ? "Checking…" : "Run prediction"}
-        </button>
-
-        {predictError && <p className="error-text">{predictError}</p>}
-
-        <details className="manifest">
-          <summary>What the 30 columns mean</summary>
-          <table className="manifest-table">
-            <tbody>
-              {EXPECTED_COLUMNS.map((col) => (
-                <tr key={col}>
-                  <td className="manifest-label">{COLUMN_LABELS[col]}</td>
-                  <td className="manifest-key">{col}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </details>
-      </section>
 
-      {predictData && (
-        <>
-          <hr className="rule" />
-          <section className="block verdict">
-            <div className="block-head">
-              <h2>Verdict</h2>
+        {predictData && (
+          <section className="verdict-section">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">ANALYSIS COMPLETE</p>
+                <h2>Verdict</h2>
+              </div>
+              <button
+                className="btn btn-outline"
+                onClick={() => downloadResults(predictData.rows)}
+              >
+                Download results
+              </button>
             </div>
 
-            <div className="tally">
-              <div className="tally-item">
-                <span className="tally-num">{predictData.row_count}</span>
-                <span className="tally-label">rows checked</span>
+            <div className="summary-grid">
+              <div className="summary-card">
+                <span className="summary-label">Rows checked</span>
+                <strong>{stats.total}</strong>
+                <span className="summary-note">records analyzed</span>
               </div>
-              <div className="tally-item tally-bad">
-                <span className="tally-num">{predictData.phishing_count}</span>
-                <span className="tally-label">flagged phishing</span>
+
+              <div className="summary-card bad">
+                <span className="summary-label">Flagged phishing</span>
+                <strong>{stats.phishing}</strong>
+                <span className="summary-note">{phishingPercent}% of records</span>
               </div>
-              <div className="tally-item tally-good">
-                <span className="tally-num">{predictData.legitimate_count}</span>
-                <span className="tally-label">legitimate</span>
+
+              <div className="summary-card good">
+                <span className="summary-label">Legitimate</span>
+                <strong>{stats.legitimate}</strong>
+                <span className="summary-note">
+                  {stats.total ? 100 - phishingPercent : 0}% of records
+                </span>
+              </div>
+
+              <div className="distribution-card">
+                <div
+                  className="donut"
+                  style={{
+                    background: `conic-gradient(#e6533c 0 ${phishingPercent}%, #4fa67a ${phishingPercent}% 100%)`,
+                  }}
+                >
+                  <div className="donut-hole">
+                    <strong>{phishingPercent}%</strong>
+                    <span>phishing</span>
+                  </div>
+                </div>
+                <div className="legend">
+                  <div>
+                    <span className="legend-dot phishing-dot" />
+                    Phishing
+                  </div>
+                  <div>
+                    <span className="legend-dot legitimate-dot" />
+                    Legitimate
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    {Object.keys(predictData.rows[0] || {}).map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {predictData.rows.map((row, i) => (
-                    <tr key={i}>
-                      {Object.entries(row).map(([key, value]) => (
-                        <td
-                          key={key}
-                          className={
-                            key === "predicted_column"
-                              ? value === 1
-                                ? "cell-bad"
-                                : "cell-good"
-                              : undefined
-                          }
-                        >
-                          {key === "predicted_column"
-                            ? value === 1
-                              ? "phishing"
-                              : "legitimate"
-                            : String(value)}
-                        </td>
+            <div className="results-header">
+              <div>
+                <h3>Website verdicts</h3>
+                <p>
+                  The model prediction is shown below. Expand a row to inspect
+                  its 30 input features.
+                </p>
+              </div>
+            </div>
+
+            <div className="results-list">
+              {(predictData.rows || []).map((row, index) => {
+                const phishing = predictionIsPhishing(row.predicted_column);
+
+                return (
+                  <details className="result-row" key={index}>
+                    <summary>
+                      <span className="row-number">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className={`verdict-badge ${phishing ? "bad" : "good"}`}>
+                        <span>{phishing ? "!" : "✓"}</span>
+                        {phishing ? "Phishing" : "Legitimate"}
+                      </span>
+                      <span className="row-caption">
+                        Website record {index + 1}
+                      </span>
+                      <span className="expand">View features +</span>
+                    </summary>
+
+                    <div className="feature-grid">
+                      {EXPECTED_COLUMNS.map((col) => (
+                        <div className="feature-cell" key={col}>
+                          <span>{COLUMN_LABELS[col]}</span>
+                          <strong>{String(row[col] ?? "—")}</strong>
+                        </div>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </div>
+                  </details>
+                );
+              })}
             </div>
           </section>
-        </>
-      )}
+        )}
+      </main>
+
+      <footer>
+        <span>Phishwatch</span>
+        <span>Machine-learning phishing website detection</span>
+        <span>30 features • FastAPI • ML model</span>
+      </footer>
     </div>
   );
 }
